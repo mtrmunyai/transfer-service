@@ -36,3 +36,12 @@ ledger:
   service:
     baseUrl: http://localhost:8081
     path: /ledger/transfer
+
+logging:
+  level:
+    root: INFO
+    za.co.sanlam: DEBUG
+  file:
+    name: logs/ledger-service.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n"
