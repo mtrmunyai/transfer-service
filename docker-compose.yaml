@@ -1,0 +1,15 @@
+version: '3.1'
+
+services:
+  transfer-service:
+    image: openjdk:17
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:h2:mem:ledgerdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    volumes:
+      - ./target/transfer-service-1.0.0.jar:/app.jar
+    entrypoint: java -jar /app.jar --spring.profiles.active=DOCKER

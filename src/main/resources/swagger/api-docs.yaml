@@ -1,0 +1,126 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8081
+  description: Generated server url
+tags:
+- name: Ledger Controller
+  description: Endpoints for managing accounts and transfers
+paths:
+  /ledger/transfer:
+    post:
+      tags:
+      - Ledger Controller
+      summary: Transfer funds between accounts
+      description: Transfers money from one account to another
+      operationId: transfer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferDTO"
+        required: true
+      responses:
+        "200":
+          description: Transfer processed
+          content:
+            '*/*':
+              schema:
+                type: string
+        "400":
+          description: Invalid input or insufficient balance
+          content:
+            '*/*':
+              schema:
+                type: string
+  /accounts:
+    post:
+      tags:
+      - Ledger Controller
+      summary: Create a new account
+      description: Creates an account with the specified initial balance
+      operationId: createAccount
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountDTO"
+        required: true
+      responses:
+        "200":
+          description: Account successfully created
+          content:
+            '*/*':
+              schema:
+                type: integer
+                format: int64
+  /accounts/{id}:
+    get:
+      tags:
+      - Ledger Controller
+      summary: Get account by ID
+      description: Returns the account details for the given ID
+      operationId: getAccount
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Account found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AccountDTO"
+        "404":
+          description: Account not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AccountDTO"
+components:
+  schemas:
+    TransferDTO:
+      type: object
+      description: Transfer details for initiating a fund transfer
+      properties:
+        transferId:
+          type: string
+          description: Unique ID for the transfer
+          example: a1b2c3d4-e5f6-7890-abcd-1234567890ef
+        fromAccountId:
+          type: string
+          description: Account ID from which funds will be debited
+          example: 1
+        toAccountId:
+          type: string
+          description: Account ID to which funds will be credited
+          example: 2
+        amount:
+          type: number
+          description: Amount to transfer
+          example: 150.75
+          minimum: 0.01
+      required:
+      - amount
+      - fromAccountId
+      - toAccountId
+      - transferId
+    AccountDTO:
+      type: object
+      description: "Details of an account, including ID and current balance"
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique account identifier
+          example: 1
+        balance:
+          type: number
+          description: Current balance in the account
+          example: 2500.75
+          minimum: 0.01
