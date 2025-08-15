@@ -1,8 +1,11 @@
 package za.co.sanlam.transferservice.service;
 
+import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.web.client.RestTemplate;
 import za.co.sanlam.transferservice.dto.TransferDTO;
 import za.co.sanlam.transferservice.dto.TransferRequest;
@@ -13,7 +16,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 class TransferServiceTest {
@@ -97,5 +103,34 @@ class TransferServiceTest {
     List<String> results = transferService.createBatch(Arrays.asList(request1, request2));
     assertEquals(2, results.size());
     assertTrue(results.stream().allMatch(r -> r.equals("Success")));
+  }
+
+  @Test
+  void createBatch_shouldThrowValidationException_forTooLargeList() {
+    TransferRequest request = TransferRequest.builder()
+            .fromAccountId("1")
+            .toAccountId("2")
+            .amount(BigDecimal.ONE)
+            .build();
+
+    List<TransferRequest> bigList = java.util.Collections.nCopies(21, request);
+
+    assertThatThrownBy(() -> transferService.createBatch(bigList))
+            .isInstanceOf(ValidationException.class)
+            .hasMessageContaining("Transfer batch size is greater");
+  }
+
+  @Test
+  void fallbackCreateTransfer_shouldReturnFailed() {
+    String result = transferService.fallbackCreateTransfer(new TransferRequest(), new RuntimeException("fail"));
+
+    assertThat(result).isEqualTo("FAILED");
+  }
+
+  @Test
+  void fallbackGetStatus_shouldReturnUnknown() {
+    String result = transferService.fallbackGetStatus("id", new RuntimeException("fail"));
+
+    assertThat(result).isEqualTo("UNKNOWN");
   }
 }

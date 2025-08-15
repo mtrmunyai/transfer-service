@@ -93,7 +93,8 @@ public class TransferService {
   }
 
   public String fallbackGetStatus(String transferId, Throwable t) {
-    log.error("Failed to get transfer status with transferId: {}, error: {}", transferId, t.getMessage());
+    log.error(
+        "Failed to get transfer status with transferId: {}, error: {}", transferId, t.getMessage());
 
     return "UNKNOWN";
   }

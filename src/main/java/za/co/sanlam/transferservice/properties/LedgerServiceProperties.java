@@ -6,8 +6,8 @@ import org.springframework.stereotype.Component;
 
 @Data
 @Component
-@ConfigurationProperties(prefix = "ledger.service")
+@ConfigurationProperties(prefix = "ledger.service.endpoint")
 public class LedgerServiceProperties {
-    private String baseUrl;
-    private String path;
+  private String baseUrl;
+  private String path;
 }

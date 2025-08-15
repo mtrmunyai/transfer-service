@@ -3,16 +3,16 @@ info:
   title: OpenAPI definition
   version: v0
 servers:
-- url: http://localhost:8081
-  description: Generated server url
+  - url: http://localhost:8081
+    description: Generated server url
 tags:
-- name: Ledger Controller
-  description: Endpoints for managing accounts and transfers
+  - name: Ledger Controller
+    description: Endpoints for managing accounts and transfers
 paths:
   /ledger/transfer:
     post:
       tags:
-      - Ledger Controller
+        - Ledger Controller
       summary: Transfer funds between accounts
       description: Transfers money from one account to another
       operationId: transfer
@@ -38,7 +38,7 @@ paths:
   /accounts:
     post:
       tags:
-      - Ledger Controller
+        - Ledger Controller
       summary: Create a new account
       description: Creates an account with the specified initial balance
       operationId: createAccount
@@ -59,16 +59,16 @@ paths:
   /accounts/{id}:
     get:
       tags:
-      - Ledger Controller
+        - Ledger Controller
       summary: Get account by ID
       description: Returns the account details for the given ID
       operationId: getAccount
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Account found
@@ -106,10 +106,10 @@ components:
           example: 150.75
           minimum: 0.01
       required:
-      - amount
-      - fromAccountId
-      - toAccountId
-      - transferId
+        - amount
+        - fromAccountId
+        - toAccountId
+        - transferId
     AccountDTO:
       type: object
       description: "Details of an account, including ID and current balance"

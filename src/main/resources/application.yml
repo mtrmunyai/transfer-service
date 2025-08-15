@@ -1,5 +1,5 @@
 package:
-  name: ledgerservice
+  name: transferservice
 
 server:
   port: 8080
@@ -31,11 +31,11 @@ management:
     health:
       show-details: always
 
-
 ledger:
   service:
-    baseUrl: http://localhost:8081
-    path: /ledger/transfer
+    endpoint:
+      baseUrl: http://localhost:8081
+      path: /ledger/transfer
 
 logging:
   level:

@@ -12,27 +12,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ActuatorEndpointTest {
 
-    @LocalServerPort
-    private int port;
+  @LocalServerPort private int port;
 
-    @Autowired
-    private TestRestTemplate restTemplate;
+  @Autowired private TestRestTemplate restTemplate;
 
-    @Test
-    void healthEndpointShouldReturnUp() {
-        String url = "http://localhost:" + port + "/actuator/health";
-        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+  @Test
+  void healthEndpointShouldReturnUp() {
+    String url = "http://localhost:" + port + "/actuator/health";
+    ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-        assertThat(response.getBody()).contains("UP");
-    }
+    assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+    assertThat(response.getBody()).contains("UP");
+  }
 
-    @Test
-    void actuatorShouldExposeEndpoints() {
-        String url = "http://localhost:" + port + "/actuator";
-        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+  @Test
+  void actuatorShouldExposeEndpoints() {
+    String url = "http://localhost:" + port + "/actuator";
+    ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-        assertThat(response.getBody()).contains("health");
-    }
+    assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+    assertThat(response.getBody()).contains("health");
+  }
 }
