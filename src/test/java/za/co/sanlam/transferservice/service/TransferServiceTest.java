@@ -1,136 +1,169 @@
 package za.co.sanlam.transferservice.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import za.co.sanlam.transferservice.dto.TransferDTO;
 import za.co.sanlam.transferservice.dto.TransferRequest;
+import za.co.sanlam.transferservice.exception.RecordNotFoundException;
+import za.co.sanlam.transferservice.model.Transfer;
+import za.co.sanlam.transferservice.model.TransferStatus;
 import za.co.sanlam.transferservice.properties.LedgerServiceProperties;
+import za.co.sanlam.transferservice.repository.TransferRepository;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 class TransferServiceTest {
 
+  @Mock private LedgerServiceProperties properties;
+  @Mock private TransferRepository transferRepository;
   @Mock private RestTemplate restTemplate;
 
-  @Mock private LedgerServiceProperties ledgerServiceProperties;
+  private Executor transferExecutor = Executors.newSingleThreadExecutor();
 
-  @InjectMocks private TransferService transferService;
+  private TransferService transferService;
 
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
+    transferService = new TransferService(properties, transferRepository, transferExecutor, restTemplate);
+  }
 
-    when(ledgerServiceProperties.getBaseUrl()).thenReturn("http://localhost:8081");
-    when(ledgerServiceProperties.getPath()).thenReturn("/ledger/entry");
+  // ---------------- createTransfer -----------------
+
+  @Test
+  void createTransfer_shouldReturnStatusAndSaveTransfer() {
+    TransferRequest request = TransferRequest.builder()
+            .fromAccountId("1")
+            .toAccountId("2")
+            .amount(BigDecimal.valueOf(100))
+            .build();
+
+    when(properties.getBaseUrl()).thenReturn("http://ledger");
+    when(properties.getPath()).thenReturn("/transfers");
+    when(transferRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    when(restTemplate.postForObject(anyString(), any(), eq(String.class))).thenReturn("SUCCESS");
+
+    String status = transferService.createTransfer(request);
+
+    assertEquals("SUCCESS", status);
+    verify(transferRepository, times(2)).save(any(Transfer.class));
   }
 
   @Test
-  void testCreateTransfer() {
-    TransferRequest request = new TransferRequest();
-    request.setFromAccountId("1");
-    request.setToAccountId("2");
-    request.setAmount(new BigDecimal("100.0"));
+  void createTransfer_shouldUseFallbackOnRestTemplateException() {
+    TransferRequest request = TransferRequest.builder()
+            .fromAccountId("1")
+            .toAccountId("2")
+            .amount(BigDecimal.valueOf(100))
+            .build();
 
-    // Create account.
+    when(properties.getBaseUrl()).thenReturn("http://ledger");
+    when(properties.getPath()).thenReturn("/transfers");
+    when(transferRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    when(restTemplate.postForObject(anyString(), any(), eq(String.class)))
+            .thenThrow(new RestClientException("Service down"));
 
-    when(restTemplate.postForObject(
-            eq("http://localhost:8081/ledger/entry"), any(TransferDTO.class), eq(String.class)))
-        .thenReturn("Success");
+    // Since fallback is called on circuit breaker failure, call fallback manually:
+    String fallbackStatus = transferService.fallbackCreateTransfer(request, new RestClientException("Service down"));
 
-    // Inject the RestTemplate manually since it's instantiated inside the service
-    transferService =
-        new TransferService(ledgerServiceProperties) {
-          @Override
-          public String createTransfer(TransferRequest request) {
-            final String url =
-                String.format(
-                    "%s%s",
-                    ledgerServiceProperties.getBaseUrl(), ledgerServiceProperties.getPath());
-            TransferDTO dto =
-                TransferDTO.builder()
-                    .transferId("test-id")
-                    .fromAccountId(request.getFromAccountId())
-                    .toAccountId(request.getToAccountId())
-                    .amount(request.getAmount())
-                    .build();
-            return restTemplate.postForObject(url, dto, String.class);
-          }
-        };
-
-    String result = transferService.createTransfer(request);
-    assertEquals("Success", result);
+    assertEquals(TransferStatus.FAILED.name(), fallbackStatus);
   }
 
+  // ---------------- createBatch -----------------
+
   @Test
-  void testCreateBatch() {
-    TransferRequest request1 = new TransferRequest();
-    request1.setFromAccountId("A1");
-    request1.setToAccountId("B1");
-    request1.setAmount(new BigDecimal("100.0"));
-    request1.setTransferId(UUID.randomUUID().toString());
+  void createBatch_shouldReturnStatuses() {
+    TransferRequest req1 = TransferRequest.builder()
+            .fromAccountId("1")
+            .toAccountId("2")
+            .amount(BigDecimal.valueOf(10))
+            .build();
+    TransferRequest req2 = TransferRequest.builder()
+            .fromAccountId("3")
+            .toAccountId("4")
+            .amount(BigDecimal.valueOf(20))
+            .build();
 
-    TransferRequest request2 = new TransferRequest();
-    request2.setFromAccountId("A2");
-    request2.setToAccountId("B2");
-    request2.setAmount(new BigDecimal("200.0"));
-    request2.setTransferId(UUID.randomUUID().toString());
+    when(properties.getBaseUrl()).thenReturn("http://ledger");
+    when(properties.getPath()).thenReturn("/transfers");
+    when(transferRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    when(restTemplate.postForObject(anyString(), any(), eq(String.class))).thenReturn("SUCCESS");
 
-    when(restTemplate.postForObject(anyString(), any(TransferDTO.class), eq(String.class)))
-        .thenReturn("Success");
+    List<String> results = transferService.createBatch(Arrays.asList(req1, req2));
 
-    transferService =
-        new TransferService(ledgerServiceProperties) {
-          @Override
-          public String createTransfer(TransferRequest request) {
-            return "Success";
-          }
-        };
-
-    List<String> results = transferService.createBatch(Arrays.asList(request1, request2));
     assertEquals(2, results.size());
-    assertTrue(results.stream().allMatch(r -> r.equals("Success")));
+    assertTrue(results.stream().allMatch("SUCCESS"::equals));
+  }
+
+  @Test
+  void createBatch_shouldThrowValidationException_forEmptyList() {
+    ValidationException ex = assertThrows(ValidationException.class,
+        () -> transferService.createBatch(Collections.emptyList()));
+    assertTrue(ex.getMessage().contains("Invalid batch size"));
   }
 
   @Test
   void createBatch_shouldThrowValidationException_forTooLargeList() {
-    TransferRequest request = TransferRequest.builder()
-            .fromAccountId("1")
-            .toAccountId("2")
-            .amount(BigDecimal.ONE)
-            .build();
+    List<TransferRequest> largeList = new ArrayList<>();
+    for (int i = 0; i < 21; i++) largeList.add(new TransferRequest());
 
-    List<TransferRequest> bigList = java.util.Collections.nCopies(21, request);
-
-    assertThatThrownBy(() -> transferService.createBatch(bigList))
-            .isInstanceOf(ValidationException.class)
-            .hasMessageContaining("Transfer batch size is greater");
+    ValidationException ex = assertThrows(ValidationException.class,
+        () -> transferService.createBatch(largeList));
+    assertTrue(ex.getMessage().contains("greater than allow max"));
   }
 
   @Test
-  void fallbackCreateTransfer_shouldReturnFailed() {
-    String result = transferService.fallbackCreateTransfer(new TransferRequest(), new RuntimeException("fail"));
+  void fallbackCreateBatchTransfer_shouldReturnFailedStatuses() {
+    TransferRequest req1 = TransferRequest.builder().transferId("t1").build();
+    TransferRequest req2 = TransferRequest.builder().transferId("t2").build();
 
-    assertThat(result).isEqualTo("FAILED");
+    List<String> fallbackResults = transferService.fallbackCreateBatchTransfer(
+            Arrays.asList(req1, req2), new RuntimeException("boom"));
+
+    assertEquals(2, fallbackResults.size());
+    assertTrue(fallbackResults.contains("t1:FAILED"));
+    assertTrue(fallbackResults.contains("t2:FAILED"));
+  }
+
+  // ---------------- getStatusByTransferId -----------------
+
+  @Test
+  void getStatusByTransferId_shouldReturnStatus() {
+    String id = UUID.randomUUID().toString();
+    Transfer transfer = Transfer.builder()
+            .id(id)
+            .status(TransferStatus.SUCCESS)
+            .build();
+
+    when(transferRepository.findById(id)).thenReturn(Optional.of(transfer));
+
+    String status = transferService.getStatusByTransferId(id);
+
+    assertEquals("SUCCESS", status);
+  }
+
+  @Test
+  void getStatusByTransferId_shouldThrowRecordNotFoundException() {
+    String id = UUID.randomUUID().toString();
+    when(transferRepository.findById(id)).thenReturn(Optional.empty());
+
+    assertThrows(RecordNotFoundException.class,
+        () -> transferService.getStatusByTransferId(id));
   }
 
   @Test
   void fallbackGetStatus_shouldReturnUnknown() {
-    String result = transferService.fallbackGetStatus("id", new RuntimeException("fail"));
-
-    assertThat(result).isEqualTo("UNKNOWN");
+    String fallback = transferService.fallbackGetStatus("someId", new RuntimeException("fail"));
+    assertEquals(TransferStatus.UNKNOWN.name(), fallback);
   }
 }

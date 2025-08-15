@@ -18,7 +18,6 @@ public class TransferRequest {
   @Schema(
       description = "Unique ID for the transfer",
       example = "a1b2c3d4-e5f6-7890-abcd-1234567890ef")
-  @NotNull(message = "Transfer ID cannot be null")
   private String transferId;
 
   @Schema(description = "Account ID from which funds will be debited", example = "1")
