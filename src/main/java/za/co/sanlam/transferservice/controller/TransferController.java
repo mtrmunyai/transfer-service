@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import za.co.sanlam.transferservice.dto.TransferRequest;
+import za.co.sanlam.transferservice.dto.TransferDTO;
 import za.co.sanlam.transferservice.service.TransferService;
 
 import java.util.List;
@@ -35,7 +35,7 @@ public class TransferController {
             description = "Internal server error",
             content = @Content)
       })
-  public ResponseEntity<String> createTransfer(@Valid @RequestBody TransferRequest request) {
+  public ResponseEntity<String> createTransfer(@Valid @RequestBody TransferDTO request) {
     log.info("Received request: {}", request);
     String status = transferService.createTransfer(request);
     log.info("Transfer status: {}", status);
@@ -55,7 +55,7 @@ public class TransferController {
             content = @Content)
       })
   public ResponseEntity<List<String>> createBatch(
-      @Valid @RequestBody List<@Valid TransferRequest> requests) {
+      @Valid @RequestBody List<@Valid TransferDTO> requests) {
     log.info("Received request: {}", requests);
     return ResponseEntity.ok(transferService.createBatch(requests));
   }

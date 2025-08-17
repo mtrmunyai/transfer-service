@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import za.co.sanlam.transferservice.dto.TransferDTO;
-import za.co.sanlam.transferservice.dto.TransferRequest;
 import za.co.sanlam.transferservice.exception.RecordNotFoundException;
 import za.co.sanlam.transferservice.model.Transfer;
 import za.co.sanlam.transferservice.model.TransferStatus;
@@ -27,7 +26,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-public class TransferService {
+public class TransferService implements TransferFallback {
 
   private final LedgerServiceProperties properties;
   private final RestTemplate restTemplate;
@@ -53,7 +52,7 @@ public class TransferService {
 
   @Transactional(Transactional.TxType.REQUIRES_NEW)
   @CircuitBreaker(name = "ledgerService", fallbackMethod = "fallbackCreateTransfer")
-  public String createTransfer(TransferRequest request) {
+  public String createTransfer(TransferDTO request) {
 
     final String url = String.format("%s%s", properties.getBaseUrl(), properties.getPath());
     final String transferId =
@@ -66,15 +65,7 @@ public class TransferService {
       return transferOptional.get().getStatus().name();
     }
 
-    final TransferDTO transfer =
-        TransferDTO.builder()
-            .transferId(transferId)
-            .fromAccountId(request.getFromAccountId())
-            .toAccountId(request.getToAccountId())
-            .amount(request.getAmount())
-            .build();
-
-    log.info("Create Transfer: url: {}, request: {}", url, transfer);
+    log.info("Create Transfer: url: {}, request: {}", url, request);
 
     final Transfer transferEntity =
         Transfer.builder()
@@ -87,7 +78,7 @@ public class TransferService {
 
     final Transfer pendingTransfer = transferRepository.save(transferEntity);
 
-    final String status = restTemplate.postForObject(url, transfer, String.class);
+    final String status = restTemplate.postForObject(url, request, String.class);
 
     log.info("Transfer status: {}", status);
 
@@ -98,7 +89,7 @@ public class TransferService {
   }
 
   @Transactional(Transactional.TxType.SUPPORTS)
-  public List<String> createBatch(List<TransferRequest> requests) {
+  public List<String> createBatch(List<TransferDTO> requests) {
     if (Objects.isNull(requests) || requests.isEmpty()) {
       log.error("Invalid batch size: nothing to process");
       throw new ValidationException("Invalid batch size: nothing to process");
@@ -145,21 +136,5 @@ public class TransferService {
 
     log.info("Transfer status: {}", status);
     return status;
-  }
-
-  public List<String> fallbackCreateBatchTransfer(List<TransferRequest> requests, Throwable t) {
-    log.error("Failed to create transfer with request(s): {}, error: {}", requests, t.getMessage());
-    return requests.stream().map(req -> TransferStatus.FAILED.name()).collect(Collectors.toList());
-  }
-
-  public String fallbackCreateTransfer(TransferRequest request, Throwable t) {
-    log.error("Failed to create transfer with request: {}, error: {}", request, t.getMessage());
-    return TransferStatus.FAILED.name();
-  }
-
-  public String fallbackGetStatus(String transferId, Throwable t) {
-    log.error(
-        "Failed to get transfer status with transferId: {}, error: {}", transferId, t.getMessage());
-    return TransferStatus.UNKNOWN.name();
   }
 }

@@ -30,7 +30,7 @@ public class TransferDTO {
   private String toAccountId;
 
   @Schema(description = "Amount to transfer", example = "150.75")
-  @DecimalMin(value = "0.01", inclusive = true, message = "Amount must be greater than 0")
+  @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
   @NotNull(message = "Amount cannot be null")
   private BigDecimal amount;
 }

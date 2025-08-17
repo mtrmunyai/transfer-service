@@ -9,7 +9,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
-import za.co.sanlam.transferservice.dto.TransferRequest;
+import za.co.sanlam.transferservice.dto.TransferDTO;
 import za.co.sanlam.transferservice.model.Transfer;
 import za.co.sanlam.transferservice.model.TransferStatus;
 import za.co.sanlam.transferservice.properties.LedgerServiceProperties;
@@ -54,8 +54,8 @@ class TransferServiceIntegrationTest {
         .andExpect(method(HttpMethod.POST))
         .andRespond(withSuccess(expectedStatus, MediaType.APPLICATION_JSON));
 
-    TransferRequest request =
-        TransferRequest.builder()
+    TransferDTO request =
+        TransferDTO.builder()
             .fromAccountId("A123")
             .toAccountId("B456")
             .amount(BigDecimal.valueOf(100.50))
@@ -88,15 +88,15 @@ class TransferServiceIntegrationTest {
         .andExpect(method(HttpMethod.POST))
         .andRespond(withSuccess(expectedStatus, MediaType.APPLICATION_JSON));
 
-    TransferRequest r1 =
-        TransferRequest.builder()
+    TransferDTO r1 =
+        TransferDTO.builder()
             .fromAccountId("A111")
             .toAccountId("B111")
             .amount(BigDecimal.valueOf(50))
             .build();
 
-    TransferRequest r2 =
-        TransferRequest.builder()
+    TransferDTO r2 =
+        TransferDTO.builder()
             .fromAccountId("A222")
             .toAccountId("B222")
             .amount(BigDecimal.valueOf(75))
@@ -124,12 +124,8 @@ class TransferServiceIntegrationTest {
         .andExpect(method(HttpMethod.POST))
         .andRespond(withSuccess(expectedStatus, MediaType.APPLICATION_JSON));
 
-    TransferRequest request =
-        TransferRequest.builder()
-            .fromAccountId("X1")
-            .toAccountId("Y1")
-            .amount(BigDecimal.TEN)
-            .build();
+    TransferDTO request =
+        TransferDTO.builder().fromAccountId("X1").toAccountId("Y1").amount(BigDecimal.TEN).build();
 
     String status = transferService.createTransfer(request);
     assertThat(status).isEqualTo(expectedStatus);
