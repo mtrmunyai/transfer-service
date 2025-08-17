@@ -7,7 +7,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
-import za.co.sanlam.transferservice.dto.TransferRequest;
+import za.co.sanlam.transferservice.dto.TransferDTO;
 import za.co.sanlam.transferservice.service.TransferService;
 
 import java.math.BigDecimal;
@@ -26,14 +26,15 @@ class TransferControllerRestTemplateTest {
 
   @Autowired private TestRestTemplate restTemplate;
 
-  @MockBean private TransferService transferService;
+  @MockBean
+  private TransferService transferService;
 
   private String getBaseUrl() {
     return "http://localhost:" + port + "/transfers";
   }
 
-  private TransferRequest buildRequest(String suffix) {
-    return TransferRequest.builder()
+  private TransferDTO buildRequest(String suffix) {
+    return TransferDTO.builder()
         .transferId("t-" + suffix)
         .fromAccountId("acc-from-" + suffix)
         .toAccountId("acc-to-" + suffix)
@@ -44,13 +45,12 @@ class TransferControllerRestTemplateTest {
   @Test
   void testCreateTransfer() {
     // Arrange
-    TransferRequest request = buildRequest("1");
-    when(transferService.createTransfer(any(TransferRequest.class)))
-        .thenReturn("Transfer Successful");
+    TransferDTO request = buildRequest("1");
+    when(transferService.createTransfer(any(TransferDTO.class))).thenReturn("Transfer Successful");
 
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
-    HttpEntity<TransferRequest> entity = new HttpEntity<>(request, headers);
+    HttpEntity<TransferDTO> entity = new HttpEntity<>(request, headers);
 
     // Act
     ResponseEntity<String> response =
@@ -63,14 +63,14 @@ class TransferControllerRestTemplateTest {
 
   @Test
   void testCreateBatch() {
-    TransferRequest req1 = buildRequest("1");
-    TransferRequest req2 = buildRequest("2");
+    TransferDTO req1 = buildRequest("1");
+    TransferDTO req2 = buildRequest("2");
 
     when(transferService.createBatch(any())).thenReturn(List.of("OK1", "OK2"));
 
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
-    HttpEntity<List<TransferRequest>> entity = new HttpEntity<>(List.of(req1, req2), headers);
+    HttpEntity<List<TransferDTO>> entity = new HttpEntity<>(List.of(req1, req2), headers);
 
     ResponseEntity<List> response =
         restTemplate.postForEntity(getBaseUrl() + "/batch", entity, List.class);

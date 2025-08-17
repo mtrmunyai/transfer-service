@@ -13,7 +13,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TransferRequestTest {
+public class TransferDTOTest {
 
   private Validator validator;
 
@@ -25,29 +25,29 @@ public class TransferRequestTest {
 
   @Test
   void whenAllFieldsAreValid_thenNoValidationErrors() {
-    TransferRequest request =
-        TransferRequest.builder()
+    TransferDTO request =
+        TransferDTO.builder()
             .transferId("a1b2c3d4-e5f6-7890-abcd-1234567890ef")
             .fromAccountId("1")
             .toAccountId("2")
             .amount(BigDecimal.valueOf(150.75))
             .build();
 
-    Set<ConstraintViolation<TransferRequest>> violations = validator.validate(request);
+    Set<ConstraintViolation<TransferDTO>> violations = validator.validate(request);
     assertTrue(violations.isEmpty(), "Expected no validation errors");
   }
 
   @Test
   void whenFromAccountIdIsNull_thenValidationFails() {
-    TransferRequest request =
-        TransferRequest.builder()
+    TransferDTO request =
+        TransferDTO.builder()
             .transferId("some-id")
             .fromAccountId(null)
             .toAccountId("2")
             .amount(BigDecimal.valueOf(100.00))
             .build();
 
-    Set<ConstraintViolation<TransferRequest>> violations = validator.validate(request);
+    Set<ConstraintViolation<TransferDTO>> violations = validator.validate(request);
     assertFalse(violations.isEmpty());
     assertTrue(
         violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("fromAccountId")));
@@ -55,15 +55,15 @@ public class TransferRequestTest {
 
   @Test
   void whenToAccountIdIsNull_thenValidationFails() {
-    TransferRequest request =
-        TransferRequest.builder()
+    TransferDTO request =
+        TransferDTO.builder()
             .transferId("some-id")
             .fromAccountId("1")
             .toAccountId(null)
             .amount(BigDecimal.valueOf(100.00))
             .build();
 
-    Set<ConstraintViolation<TransferRequest>> violations = validator.validate(request);
+    Set<ConstraintViolation<TransferDTO>> violations = validator.validate(request);
     assertFalse(violations.isEmpty());
     assertTrue(
         violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("toAccountId")));
@@ -71,30 +71,30 @@ public class TransferRequestTest {
 
   @Test
   void whenAmountIsNull_thenValidationFails() {
-    TransferRequest request =
-        TransferRequest.builder()
+    TransferDTO request =
+        TransferDTO.builder()
             .transferId("some-id")
             .fromAccountId("1")
             .toAccountId("2")
             .amount(null)
             .build();
 
-    Set<ConstraintViolation<TransferRequest>> violations = validator.validate(request);
+    Set<ConstraintViolation<TransferDTO>> violations = validator.validate(request);
     assertFalse(violations.isEmpty());
     assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("amount")));
   }
 
   @Test
   void whenAmountIsLessThanMinimum_thenValidationFails() {
-    TransferRequest request =
-        TransferRequest.builder()
+    TransferDTO request =
+        TransferDTO.builder()
             .transferId("some-id")
             .fromAccountId("1")
             .toAccountId("2")
             .amount(BigDecimal.valueOf(0.001)) // less than 0.01
             .build();
 
-    Set<ConstraintViolation<TransferRequest>> violations = validator.validate(request);
+    Set<ConstraintViolation<TransferDTO>> violations = validator.validate(request);
     assertFalse(violations.isEmpty());
     assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("amount")));
   }
