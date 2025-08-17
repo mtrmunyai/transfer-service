@@ -10,31 +10,33 @@ import za.co.sanlam.transferservice.service.TransferCleanupService;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class TransferCleanupServiceTest {
 
-    private TransferRepository transferRepository;
-    private TransferCleanupService transferCleanupService;
+  private TransferRepository transferRepository;
+  private TransferCleanupService transferCleanupService;
 
-    @BeforeEach
-    void setUp() {
-        transferRepository = Mockito.mock(TransferRepository.class);
-        transferCleanupService = new TransferCleanupService(transferRepository);
-    }
+  @BeforeEach
+  void setUp() {
+    transferRepository = Mockito.mock(TransferRepository.class);
+    transferCleanupService = new TransferCleanupService(transferRepository);
+  }
 
-    @Test
-    void cleanupOldTransfers_deletesRecordsOlderThan24Hours() {
-        transferCleanupService.cleanupOldTransfers();
+  @Test
+  void cleanupOldTransfers_deletesRecordsOlderThan24Hours() {
+    transferCleanupService.cleanupOldTransfers();
 
-        ArgumentCaptor<LocalDateTime> captor = ArgumentCaptor.forClass(LocalDateTime.class);
-        verify(transferRepository, times(1)).deleteByCreatedBefore(captor.capture());
+    ArgumentCaptor<LocalDateTime> captor = ArgumentCaptor.forClass(LocalDateTime.class);
+    verify(transferRepository, times(1)).deleteByCreatedBefore(captor.capture());
 
-        LocalDateTime cutoff = captor.getValue();
-        LocalDateTime nowMinus24Hours = LocalDateTime.now().minusHours(24);
+    LocalDateTime cutoff = captor.getValue();
+    LocalDateTime nowMinus24Hours = LocalDateTime.now().minusHours(24);
 
-        assertTrue(cutoff.isAfter(nowMinus24Hours.minusSeconds(5)) &&
-                   cutoff.isBefore(nowMinus24Hours.plusSeconds(5)),
-                   "Cutoff should be approx 24 hours ago");
-    }
+    assertTrue(
+        cutoff.isAfter(nowMinus24Hours.minusSeconds(5))
+            && cutoff.isBefore(nowMinus24Hours.plusSeconds(5)),
+        "Cutoff should be approx 24 hours ago");
+  }
 }

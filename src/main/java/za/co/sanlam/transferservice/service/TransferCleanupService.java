@@ -13,14 +13,14 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class TransferCleanupService {
 
-    private final TransferRepository transferRepository;
+  private final TransferRepository transferRepository;
 
-    // Runs every hour (adjust as needed)
-    @Scheduled(cron = "0 0 * * * *")
-    public void cleanupOldTransfers() {
-        LocalDateTime cutoff = LocalDateTime.now().minusHours(24);
-        log.info("Cleaning up transfers older than: {}", cutoff);
+  // Runs every hour (adjust as needed)
+  @Scheduled(cron = "0 0 * * * *")
+  public void cleanupOldTransfers() {
+    LocalDateTime cutoff = LocalDateTime.now().minusHours(24);
+    log.info("Cleaning up transfers older than: {}", cutoff);
 
-        transferRepository.deleteByCreatedBefore(cutoff);
-    }
+    transferRepository.deleteByCreatedBefore(cutoff);
+  }
 }

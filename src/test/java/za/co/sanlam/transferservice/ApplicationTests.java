@@ -12,12 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ApplicationTests {
 
-    @Autowired
-    private TestRestTemplate restTemplate;
+  @Autowired private TestRestTemplate restTemplate;
 
-    @Test
-    void healthCheckShouldReturnOk() {
-        ResponseEntity<String> response = restTemplate.getForEntity("/actuator/health", String.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
+  @Test
+  void healthCheckShouldReturnOk() {
+    ResponseEntity<String> response = restTemplate.getForEntity("/actuator/health", String.class);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
 }
