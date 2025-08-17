@@ -19,6 +19,7 @@ import za.co.sanlam.transferservice.repository.TransferRepository;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -54,7 +55,14 @@ public class TransferService {
   public String createTransfer(TransferRequest request) {
 
     final String url = String.format("%s%s", properties.getBaseUrl(), properties.getPath());
-    final String transferId = UUID.randomUUID().toString();
+    final String transferId = request.getTransferId()!= null? request.getTransferId(): UUID.randomUUID().toString();
+
+    // Check if transfer has been initiated
+     Optional<Transfer> transferOptional = transferRepository.findById(transferId);
+    if(transferOptional.isPresent()) {
+      log.warn("Transfer: {}, already exist", transferOptional);
+      return transferOptional.get().getStatus().name();
+    }
 
     final TransferDTO transfer =
             TransferDTO.builder()
