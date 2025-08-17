@@ -6,6 +6,7 @@ import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import za.co.sanlam.transferservice.dto.TransferDTO;
@@ -32,18 +33,23 @@ public class TransferService {
   private final TransferRepository transferRepository;
   private final Executor transferExecutor;
 
+  // Self-injection so async calls use the Spring proxy (AOP applies)
+  private final TransferService self;
+
   @Autowired
   public TransferService(LedgerServiceProperties properties,
                          TransferRepository transferRepository,
                          @Qualifier("transferExecutor") Executor transferExecutor,
-                         RestTemplate restTemplate) {
+                         RestTemplate restTemplate,
+                         @Lazy TransferService self) {
     this.properties = properties;
     this.transferRepository = transferRepository;
     this.transferExecutor = transferExecutor;
     this.restTemplate = restTemplate;
+    this.self = self;
   }
 
-  @Transactional
+  @Transactional(Transactional.TxType.REQUIRES_NEW)
   @CircuitBreaker(name = "ledgerService", fallbackMethod = "fallbackCreateTransfer")
   public String createTransfer(TransferRequest request) {
 
@@ -76,14 +82,12 @@ public class TransferService {
     log.info("Transfer status: {}", status);
 
     pendingTransfer.setStatus(TransferStatus.valueOf(status));
-
     transferRepository.save(pendingTransfer);
 
     return status;
   }
 
-  @Transactional
-  @CircuitBreaker(name = "transferService", fallbackMethod = "fallbackCreateBatchTransfer")
+  @Transactional(Transactional.TxType.SUPPORTS)
   public List<String> createBatch(List<TransferRequest> requests) {
     if (Objects.isNull(requests) || requests.isEmpty()) {
       log.error("Invalid batch size: nothing to process");
@@ -97,10 +101,17 @@ public class TransferService {
 
     log.info("Batch size: {}", requests.size());
 
+    // Use self proxy so @Transactional/@CircuitBreaker apply in async threads
     List<CompletableFuture<String>> futures = requests.stream()
-            .map(request -> CompletableFuture.supplyAsync(() -> createTransfer(request), transferExecutor))
+            .map(req -> CompletableFuture.supplyAsync(
+                    () -> self.createTransfer(req), transferExecutor
+            ).exceptionally(ex -> {
+              log.error("Async transfer failed for request {}: {}", req, ex.getMessage());
+              return TransferStatus.FAILED.name();
+            }))
             .collect(Collectors.toList());
 
+    // Join each future; failures already mapped to FAILED
     return futures.stream()
             .map(CompletableFuture::join)
             .collect(Collectors.toList());
@@ -108,24 +119,22 @@ public class TransferService {
 
   @CircuitBreaker(name = "ledgerService", fallbackMethod = "fallbackGetStatus")
   public String getStatusByTransferId(String transferId) {
-
     log.info("Get transfer status: {}", transferId);
 
     final String status = transferRepository.findById(transferId)
             .map(Transfer::getStatus)
             .map(Enum::name)
-            .orElseThrow(() -> new RecordNotFoundException("Failed to find transfer using transferId: " + transferId));
+            .orElseThrow(() -> new RecordNotFoundException(
+                    "Failed to find transfer using transferId: " + transferId));
 
     log.info("Transfer status: {}", status);
     return status;
   }
 
   public List<String> fallbackCreateBatchTransfer(List<TransferRequest> requests, Throwable t) {
-    log.error("Failed to create transfer with request: {}, error: {}", requests, t.getMessage());
-
-    return requests
-            .stream()
-            .map(transferRequest -> String.format("%s:%s", transferRequest.getTransferId(), TransferStatus.FAILED))
+    log.error("Failed to create transfer with request(s): {}, error: {}", requests, t.getMessage());
+    return requests.stream()
+            .map(req -> TransferStatus.FAILED.name())
             .collect(Collectors.toList());
   }
 

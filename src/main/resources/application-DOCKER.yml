@@ -19,7 +19,7 @@ spring:
 ledger:
   service:
     endpoint:
-      baseUrl: http://localhost:8081
+      baseUrl: http://ledger-service:8081
 
 logging:
   level:

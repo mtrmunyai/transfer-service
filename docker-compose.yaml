@@ -2,9 +2,12 @@ version: '3.1'
 
 services:
   transfer-service:
+    container_name: transfer-service
     image: openjdk:17
     ports:
       - "8080:8080"
+    networks:
+      - sanlam-network
     environment:
       - SPRING_DATASOURCE_URL=jdbc:h2:mem:ledgerdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
       - SPRING_DATASOURCE_USERNAME=sa
@@ -13,3 +16,7 @@ services:
     volumes:
       - ./target/transfer-service-1.0.0.jar:/app.jar
     entrypoint: java -jar /app.jar --spring.profiles.active=DOCKER
+
+networks:
+  sanlam-network:
+    external: true
