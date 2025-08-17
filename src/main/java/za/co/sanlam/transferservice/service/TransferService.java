@@ -38,11 +38,12 @@ public class TransferService {
   private final TransferService self;
 
   @Autowired
-  public TransferService(LedgerServiceProperties properties,
-                         TransferRepository transferRepository,
-                         @Qualifier("transferExecutor") Executor transferExecutor,
-                         RestTemplate restTemplate,
-                         @Lazy TransferService self) {
+  public TransferService(
+      LedgerServiceProperties properties,
+      TransferRepository transferRepository,
+      @Qualifier("transferExecutor") Executor transferExecutor,
+      RestTemplate restTemplate,
+      @Lazy TransferService self) {
     this.properties = properties;
     this.transferRepository = transferRepository;
     this.transferExecutor = transferExecutor;
@@ -55,27 +56,28 @@ public class TransferService {
   public String createTransfer(TransferRequest request) {
 
     final String url = String.format("%s%s", properties.getBaseUrl(), properties.getPath());
-    final String transferId = request.getTransferId()!= null? request.getTransferId(): UUID.randomUUID().toString();
+    final String transferId =
+        request.getTransferId() != null ? request.getTransferId() : UUID.randomUUID().toString();
 
     // Check if transfer has been initiated
-     Optional<Transfer> transferOptional = transferRepository.findById(transferId);
-    if(transferOptional.isPresent()) {
+    Optional<Transfer> transferOptional = transferRepository.findById(transferId);
+    if (transferOptional.isPresent()) {
       log.warn("Transfer: {}, already exist", transferOptional);
       return transferOptional.get().getStatus().name();
     }
 
     final TransferDTO transfer =
-            TransferDTO.builder()
-                    .transferId(transferId)
-                    .fromAccountId(request.getFromAccountId())
-                    .toAccountId(request.getToAccountId())
-                    .amount(request.getAmount())
-                    .build();
+        TransferDTO.builder()
+            .transferId(transferId)
+            .fromAccountId(request.getFromAccountId())
+            .toAccountId(request.getToAccountId())
+            .amount(request.getAmount())
+            .build();
 
     log.info("Create Transfer: url: {}, request: {}", url, transfer);
 
-    final Transfer transferEntity = Transfer
-            .builder()
+    final Transfer transferEntity =
+        Transfer.builder()
             .id(transferId)
             .amount(request.getAmount())
             .toAccountId(request.getToAccountId())
@@ -110,30 +112,36 @@ public class TransferService {
     log.info("Batch size: {}", requests.size());
 
     // Use self proxy so @Transactional/@CircuitBreaker apply in async threads
-    List<CompletableFuture<String>> futures = requests.stream()
-            .map(req -> CompletableFuture.supplyAsync(
-                    () -> self.createTransfer(req), transferExecutor
-            ).exceptionally(ex -> {
-              log.error("Async transfer failed for request {}: {}", req, ex.getMessage());
-              return TransferStatus.FAILED.name();
-            }))
+    List<CompletableFuture<String>> futures =
+        requests.stream()
+            .map(
+                req ->
+                    CompletableFuture.supplyAsync(() -> self.createTransfer(req), transferExecutor)
+                        .exceptionally(
+                            ex -> {
+                              log.error(
+                                  "Async transfer failed for request {}: {}", req, ex.getMessage());
+                              return TransferStatus.FAILED.name();
+                            }))
             .collect(Collectors.toList());
 
     // Join each future; failures already mapped to FAILED
-    return futures.stream()
-            .map(CompletableFuture::join)
-            .collect(Collectors.toList());
+    return futures.stream().map(CompletableFuture::join).collect(Collectors.toList());
   }
 
   @CircuitBreaker(name = "ledgerService", fallbackMethod = "fallbackGetStatus")
   public String getStatusByTransferId(String transferId) {
     log.info("Get transfer status: {}", transferId);
 
-    final String status = transferRepository.findById(transferId)
+    final String status =
+        transferRepository
+            .findById(transferId)
             .map(Transfer::getStatus)
             .map(Enum::name)
-            .orElseThrow(() -> new RecordNotFoundException(
-                    "Failed to find transfer using transferId: " + transferId));
+            .orElseThrow(
+                () ->
+                    new RecordNotFoundException(
+                        "Failed to find transfer using transferId: " + transferId));
 
     log.info("Transfer status: {}", status);
     return status;
@@ -141,9 +149,7 @@ public class TransferService {
 
   public List<String> fallbackCreateBatchTransfer(List<TransferRequest> requests, Throwable t) {
     log.error("Failed to create transfer with request(s): {}, error: {}", requests, t.getMessage());
-    return requests.stream()
-            .map(req -> TransferStatus.FAILED.name())
-            .collect(Collectors.toList());
+    return requests.stream().map(req -> TransferStatus.FAILED.name()).collect(Collectors.toList());
   }
 
   public String fallbackCreateTransfer(TransferRequest request, Throwable t) {
@@ -152,7 +158,8 @@ public class TransferService {
   }
 
   public String fallbackGetStatus(String transferId, Throwable t) {
-    log.error("Failed to get transfer status with transferId: {}, error: {}", transferId, t.getMessage());
+    log.error(
+        "Failed to get transfer status with transferId: {}, error: {}", transferId, t.getMessage());
     return TransferStatus.UNKNOWN.name();
   }
 }

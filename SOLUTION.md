@@ -2,7 +2,8 @@
 
 ## Project Overview
 
-This project implements a **Transfer Service** in Java using Spring Boot. It provides APIs to create single and batch transfers, manage transfer statuses, and clean up old transfers.
+This project implements a **Transfer Service** in Java using Spring Boot. It provides APIs to create single and batch
+transfers, manage transfer statuses, and clean up old transfers.
 
 ---
 
@@ -93,17 +94,18 @@ services:
       - ./target/transfer-service-1.0.0.jar:/app.jar
     entrypoint: java -jar /app.jar --spring.profiles.active=DOCKER
 ```
-###Run with:
+
+### Run with:
 
 docker-compose up
 
-###API Documentation
+### API Documentation
 
 Accessible via Swagger UI at:
 
 http://localhost:8080/swagger-ui.html
 
-##Code Coverage
+## Code Coverage
 
 JaCoCo configured with minimum 50% instruction coverage.
 
@@ -111,7 +113,7 @@ Excludes application main class and test classes.
 
 Reports generated during Maven test phase.
 
-##Notes
+## Notes
 
 The ledger service URL is configurable via application.properties or environment variables.
 
@@ -121,10 +123,10 @@ Uses H2 in-memory DB for ease of testing, can be switched to a persistent DB by 
 
 Circuit breaker fallbacks provide resilience in case of downstream failures.
 
+## What to Improve
 
-##What to Improve
-
-- Error Handling: Enhance error responses with more detailed error bodies and use consistent HTTP status codes for client and server errors.
+- Error Handling: Enhance error responses with more detailed error bodies and use consistent HTTP status codes for
+  client and server errors.
 
 - Security: Implement proper authentication and authorization instead of disabling security completely.
 
@@ -134,18 +136,22 @@ Circuit breaker fallbacks provide resilience in case of downstream failures.
 
 - API Versioning: Implement versioning for APIs to support backward compatibility.
 
-- Monitoring & Metrics: Integrate monitoring tools (e.g., Micrometer, Prometheus) to track service health and performance.
+- Monitoring & Metrics: Integrate monitoring tools (e.g., Micrometer, Prometheus) to track service health and
+  performance.
 
 - Performance: Improve batch processing efficiency and consider reactive programming for better scalability.
 
 - Database: Move from in-memory H2 to a production-grade database such as PostgreSQL or MySQL.
 
-- Testing: Increase test coverage, add integration and end-to-end tests, especially for the REST endpoints and database interactions.
+- Testing: Increase test coverage, add integration and end-to-end tests, especially for the REST endpoints and database
+  interactions.
 
-- Configuration Management: Support externalized configuration via Spring Cloud Config or Kubernetes ConfigMaps for easier deployments.
+- Configuration Management: Support externalized configuration via Spring Cloud Config or Kubernetes ConfigMaps for
+  easier deployments.
 
 - Documentation: Expand API documentation with usage examples, error codes, and detailed schemas.
 
 - Resilience: Add retries with backoff and rate limiting to complement the circuit breaker pattern.
 
-- Asynchronous Communication: Consider messaging queues (e.g., RabbitMQ, Kafka) for decoupled and resilient batch processing.
+- Asynchronous Communication: Consider messaging queues (e.g., RabbitMQ, Kafka) for decoupled and resilient batch
+  processing.

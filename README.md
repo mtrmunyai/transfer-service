@@ -1,6 +1,7 @@
 # Transfer Service
 
-A Spring Boot microservice that handles money transfers between accounts, supporting single and batch transfers with resiliency patterns and asynchronous processing.
+A Spring Boot microservice that handles money transfers between accounts, supporting single and batch transfers with
+resiliency patterns and asynchronous processing.
 
 ---
 
@@ -48,18 +49,19 @@ A Spring Boot microservice that handles money transfers between accounts, suppor
 mvn clean package
 ```
 
-###Run locally
+### Run locally
+
 java -jar target/transfer-service-1.0.0.jar
 
 The service will start on port 8080 by default.
 
-###Run with Docker
+### Run with Docker
 
 Make sure you have built the jar (```mvn clean package```).
 
 ```docker-compose up --build```
 
-###API Endpoints
+### API Endpoints
 
 | Method | Endpoint           | Description                 |
 | ------ | ------------------ | --------------------------- |
@@ -67,10 +69,10 @@ Make sure you have built the jar (```mvn clean package```).
 | POST   | `/transfers/batch` | Create a batch of transfers |
 | GET    | `/transfers/{id}`  | Get status by transfer ID   |
 
-
-###Configuration
+### Configuration
 
 Externalize properties in application.yml or environment variables:
+
 ````
 spring:
     datasource:
@@ -88,7 +90,7 @@ ledger:
             path: /api/ledger/transfer
 ````
 
-###Improvements & Next Steps
+### Improvements & Next Steps
 
 - API Versioning: Add explicit API versioning to support backward compatibility (e.g., /api/v1/transfers).
 

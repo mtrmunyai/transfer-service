@@ -1,8 +1,8 @@
 package za.co.sanlam.transferservice.exception;
 
-public class RecordNotFoundException extends RuntimeException{
+public class RecordNotFoundException extends RuntimeException {
 
-    public RecordNotFoundException(String message) {
-        super(message);
-    }
+  public RecordNotFoundException(String message) {
+    super(message);
+  }
 }
